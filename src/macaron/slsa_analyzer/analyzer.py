@@ -153,15 +153,14 @@ class Analyzer:
                 # Analyze the main target.
                 main_record = self.run_single(main_config, analysis)
 
-                if main_record.status != SCMStatus.AVAILABLE or not main_record.context:
-                    logger.info("Analysis has failed.")
-                    return os.EX_DATAERR
-
                 # Run the chosen dependency analyzer plugin.
                 if skip_deps:
                     logger.info("Skipping automatic dependency analysis...")
+                elif sbom_path:
+                    logger.info("Getting the dependencies from the SBOM defined at %s.", sbom_path)
+                    deps_resolved = get_deps_from_sbom(sbom_path)
                 else:
-                    deps_resolved = self.resolve_dependencies(main_record.context, sbom_path)
+                    deps_resolved = self.resolve_dependencies(main_record.context)
 
                 # Merge the automatically resolved dependencies with the manual configuration.
                 deps_config = DependencyAnalyzer.merge_configs(deps_config, deps_resolved)
@@ -214,6 +213,12 @@ class Analyzer:
                 logger.info(str(report))
 
                 db_session.add(analysis)
+
+                # We only return error code if the main target is empty and no dependencies has been analyzed.
+                if (main_record.status != SCMStatus.AVAILABLE or not main_record.context) and not report.record_mapping:
+                    logger.info("No analysis has been done!. Please check your analysis targets.")
+                    return os.EX_DATAERR
+
                 logger.info("Analysis Completed!")
                 return os.EX_OK
         except sqlalchemy.exc.SQLAlchemyError as error:
@@ -233,36 +238,36 @@ class Analyzer:
             The report of the analysis.
         """
         if not report.root_record.context:
-            logger.critical("The main repository analysis failed. Cannot generate a report for it.")
-            return
+            output_target_path = os.path.join(
+                # TODO: Implement a unique directory name for this scenario.
+                # Prefix the directory name with the timestamp is possible.
+                global_config.output_path,
+                "reports",
+                "temp",
+            )
+        else:
+            output_target_path = os.path.join(
+                global_config.output_path, "reports", report.root_record.context.component.report_dir_name
+            )
 
-        output_target_path = os.path.join(
-            global_config.output_path, "reports", report.root_record.context.component.report_dir_name
-        )
         os.makedirs(output_target_path, exist_ok=True)
 
         for reporter in self.reporters:
             reporter.generate(output_target_path, report)
 
-    def resolve_dependencies(self, main_ctx: AnalyzeContext, sbom_path: str) -> dict[str, DependencyInfo]:
+    def resolve_dependencies(self, main_ctx: AnalyzeContext) -> dict[str, DependencyInfo]:
         """Resolve the dependencies of the main target repo.
 
         Parameters
         ----------
         main_ctx : AnalyzeContext
             The context of object of the target repository.
-        sbom_path: str
-            The path to the SBOM.
 
         Returns
         -------
         dict[str, DependencyInfo]
             A dictionary where artifacts are grouped based on ``artifactId:groupId``.
         """
-        if sbom_path:
-            logger.info("Getting the dependencies from the SBOM defined at %s.", sbom_path)
-            return get_deps_from_sbom(sbom_path)
-
         deps_resolved: dict[str, DependencyInfo] = {}
 
         build_tools = main_ctx.dynamic_data["build_spec"]["tools"]

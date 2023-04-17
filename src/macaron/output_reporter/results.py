@@ -119,6 +119,10 @@ class Record(Generic[RecordNode]):
         result = {
             "metadata": {
                 "timestamps": datetime.now().isoformat(sep=" ", timespec="seconds"),
+                "component": {
+                    "config_target_path": self.pre_config.options.get("path", ""),
+                    "summary": self.get_summary(),
+                },
             },
             "target": self.context.get_dict() if self.context else {},
             "dependencies": self.get_dep_summary(),
@@ -174,6 +178,16 @@ class Report:
         self.record_mapping: dict[str, Record] = {}
         if root_record.context:
             self.record_mapping[root_record.record_id] = root_record
+
+    def get_dep_records(self) -> Iterable[Record]:
+        """Get the generator for all dep records in the report.
+
+        Yields
+        ------
+        Record
+            The dep record within this report instance.
+        """
+        yield from self.root_record.dependencies
 
     def get_records(self) -> Iterable[Record]:
         """Get the generator for all records in the report.
@@ -270,8 +284,15 @@ class Report:
 
     def __str__(self) -> str:
         """Return the string representation of the Report instance."""
-        ctx_list = list(self.get_ctxs())
-        main_ctx: AnalyzeContext = ctx_list.pop(0)
+        main_ctx = self.root_record.context
+
+        if not main_ctx:
+            return "".join(
+                [
+                    "\nANALYSIS RESULT:\n\n",
+                    "\nThere is no information to display for the main target.\n\n",
+                ]
+            )
 
         output = "".join(
             [
@@ -281,6 +302,9 @@ class Report:
                 "\nSLSA REQUIREMENT RESULTS:\n",
             ]
         )
+
+        # Remove the AnalyzeContext instance of the main target.
+        ctx_list = list(self.get_ctxs())[1:]
 
         slsa_req_mesg: dict[SLSALevels, list[str]] = {level: [] for level in SLSALevels if level != SLSALevels.LEVEL0}
         for req in main_ctx.ctx_data.values():
