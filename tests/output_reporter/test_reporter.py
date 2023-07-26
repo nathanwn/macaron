@@ -116,8 +116,6 @@ def test_main_target_status(
         status=main_status,
         context=MagicMock(),
         dependencies=[],
-        policies_failed=[],
-        policies_passed=[],
     )
 
     report = Report(main_record)
@@ -130,8 +128,6 @@ def test_main_target_status(
             status=SCMStatus.AVAILABLE,
             context=MagicMock(),
             dependencies=[],
-            policies_failed=[],
-            policies_passed=[],
         )
         report.root_record.dependencies.append(dep_record)
 
