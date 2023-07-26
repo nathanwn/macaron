@@ -160,7 +160,7 @@ class Analyzer:
                     logger.info("Getting the dependencies from the SBOM defined at %s.", sbom_path)
                     deps_resolved = get_deps_from_sbom(sbom_path)
                 else:
-                    deps_resolved = self.resolve_dependencies(main_record.context)
+                    deps_resolved = self.resolve_dependencies(main_record.context) if main_record.context else {}
 
                 # Merge the automatically resolved dependencies with the manual configuration.
                 deps_config = DependencyAnalyzer.merge_configs(deps_config, deps_resolved)
@@ -215,7 +215,7 @@ class Analyzer:
                 db_session.add(analysis)
 
                 # We only return error code if the main target is empty and no dependencies has been analyzed.
-                if (main_record.status != SCMStatus.AVAILABLE or not main_record.context) and not report.record_mapping:
+                if main_record.status != SCMStatus.AVAILABLE and not report.record_mapping:
                     logger.info("No analysis has been done!. Please check your analysis targets.")
                     return os.EX_DATAERR
 
