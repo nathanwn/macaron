@@ -119,10 +119,6 @@ class Record(Generic[RecordNode]):
         result = {
             "metadata": {
                 "timestamps": datetime.now().isoformat(sep=" ", timespec="seconds"),
-                "component": {
-                    "config_target_path": self.pre_config.options.get("path", ""),
-                    "summary": self.get_summary(),
-                },
             },
             "target": self.context.get_dict() if self.context else {},
             "dependencies": self.get_dep_summary(),

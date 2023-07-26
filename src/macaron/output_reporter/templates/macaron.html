@@ -115,30 +115,6 @@
 {% endcall %}
 {%- endmacro -%}
 
-{#
-    Render the status for the target.
-#}
-{%- macro render_target_metadata(target_metadata) -%}
-{% call macaron_macros.render_table(class="target_info", has_header=false) %}
-    {% for key, value in target_metadata.summary | items %}
-    <tr>
-        <th>
-            {{ key | replace("_", " ") | capitalize }}
-        </th>
-        {% if key == "status" %}
-        <td class={{ value | get_dep_status_color }}>{{ value.value }}</td>
-        {% elif key == "report" %}
-        {# We ignore this field. #}
-        {% else %}
-        <td>
-            {{ value }}
-        </td>
-        {% endif %}
-    </tr>
-    {% endfor %}
-{% endcall %}
-{%- endmacro -%}
-
 {# -------------------------------------------- #}
 
 {#
@@ -193,13 +169,8 @@
     {% else %}
 
     <div id= "prov_justification">
-        {% if metadata.component.config_target_path == "" %}
-        The analysis cannot complete because the target is not available.
-        {% else %}
-        The analysis for the target at {{ metadata.component.config_target_path }} is not successful.
-        {% endif %}
+        The results for the main target component is not available.
     </div>
-    {{ render_target_metadata(metadata.component) }}
 
     {% endif %}
 
