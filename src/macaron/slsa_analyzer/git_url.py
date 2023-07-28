@@ -8,8 +8,10 @@ import logging
 import os
 import re
 import string
+import subprocess  # nosec B404
 import urllib.parse
 from configparser import ConfigParser
+from pathlib import Path
 
 from git import GitCommandError
 from git.objects import Commit
@@ -337,20 +339,36 @@ def clone_remote_repo(clone_dir: str, url: str) -> Repo | None:
             )
             return None
 
+    # Ensure that the parent directory where the repo is cloned into exists.
+    parent_dir = Path(clone_dir).parent
+    parent_dir.mkdir(parents=True, exist_ok=True)
+
+    # We use blobless partial clone to reduce clone time,
+    # by retrieving blobs lazily while retaining git history.
+    # For more details, see the following:
+    # - https://git-scm.com/docs/partial-clone
+    # - https://git-scm.com/docs/git-rev-list
+    # - https://github.blog/2020-12-21-get-up-to-speed-with-partial-clone-and-shallow-clone
     try:
-        # The Repo.clone_from method handles creating intermediate dirs.
-        return Repo.clone_from(
-            url=url,
-            to_path=clone_dir,
+        result = subprocess.run(  # nosec B603
+            ["/usr/bin/env", "git", "clone", "--filter=blob:none", url],
+            capture_output=True,
+            cwd=parent_dir,
+            check=False,
             env={
                 # Setting the GIT_TERMINAL_PROMPT environment variable to ``0`` stops
                 # ``git clone`` from prompting for login credentials.
                 "GIT_TERMINAL_PROMPT": "0",
             },
         )
-    except GitCommandError as error:
-        # stderr here does not contain secrets, so it is safe for logging.
-        raise CloneError(error.stderr) from None
+    except (subprocess.CalledProcessError, OSError):
+        # Here, we raise from ``None`` to be extra-safe that no token is leaked.
+        raise CloneError("Failed to clone repository.") from None
+
+    if result.returncode != 0:
+        raise CloneError("Failed to clone repository: the `git clone` command exited with non-zero return code.")
+
+    return Repo(path=clone_dir)
 
 
 def get_repo_name_from_url(url: str) -> str:
