@@ -8,7 +8,7 @@
     "component_violates_policy": [],
     "component_satisfies_policy": [
         [
-            "1",
+            "121",
             "github.com/slsa-framework/slsa-verifier",
             "auth-provenance"
         ]

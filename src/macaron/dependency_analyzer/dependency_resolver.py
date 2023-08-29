@@ -29,9 +29,13 @@ class DependencyTools(str, Enum):
 class DependencyInfo(TypedDict):
     """The information of a resolved dependency."""
 
-    version: str
-    group: str
+    scheme: str
+    type_: str
+    namespace: str
     name: str
+    version: str
+    qualifiers: str
+    subpath: str
     url: str
     note: str
     available: SCMStatus

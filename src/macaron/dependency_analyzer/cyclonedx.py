@@ -171,9 +171,13 @@ def convert_components_to_artifacts(
             # According to PEP-0589 all keys must be present in a TypedDict.
             # See https://peps.python.org/pep-0589/#totality
             item = DependencyInfo(
-                version=component.get("version") or "",
-                group=component.get("group") or "",
+                scheme="pkg",
+                type_="maven",
+                namespace=component.get("group") or "",
                 name=component.get("name") or "",
+                version=component.get("version") or "",
+                qualifiers="",
+                subpath="",
                 url="",
                 note="",
                 available=SCMStatus.AVAILABLE,
@@ -189,7 +193,7 @@ def convert_components_to_artifacts(
                     "snapshot"
                     in (item.get("version") or "").lower()  # or "" is not necessary but mypy produces a FP otherwise.
                     and root_component
-                    and item.get("group") == root_component.get("group")
+                    and item.get("namespace") == root_component.get("group")
                 ):
                     continue
                 logger.debug(
