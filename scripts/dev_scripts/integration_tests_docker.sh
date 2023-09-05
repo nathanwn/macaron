@@ -15,6 +15,7 @@ RUN_MACARON_SCRIPT=$2
 # The scripts to compare the results of the integration tests.
 COMPARE_DEPS=$WORKSPACE/tests/dependency_analyzer/compare_dependencies.py
 COMPARE_JSON_OUT=$WORKSPACE/tests/e2e/compare_e2e_result.py
+TEST_REPO_FINDER=$WORKSPACE/tests/e2e/repo_finder/repo_finder.py
 
 RESULT_CODE=0
 
@@ -143,7 +144,7 @@ python $COMPARE_POLICIES $POLICY_RESULT $POLICY_EXPECTED || log_fail
 echo -e "\n----------------------------------------------------------------------------------"
 echo "Test Repo Finder functionality."
 echo -e "----------------------------------------------------------------------------------\n"
-$RUN_MACARON_SCRIPT -v test-repo-finder
+python $COMPARE_JSON_OUT || log_fail
 if [ $? -ne 0 ];
 then
     echo -e "Expect zero status code but got $?."
