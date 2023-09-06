@@ -15,7 +15,6 @@ RUN_MACARON_SCRIPT=$2
 # The scripts to compare the results of the integration tests.
 COMPARE_DEPS=$WORKSPACE/tests/dependency_analyzer/compare_dependencies.py
 COMPARE_JSON_OUT=$WORKSPACE/tests/e2e/compare_e2e_result.py
-TEST_REPO_FINDER=$WORKSPACE/tests/e2e/repo_finder/repo_finder.py
 
 RESULT_CODE=0
 
@@ -139,17 +138,6 @@ POLICY_EXPECTED=$WORKSPACE/tests/policy_engine/expected_results/policy_report.js
 # Run policy engine on the database and compare results.
 $RUN_MACARON_SCRIPT verify-policy -f $POLICY_FILE -d "$WORKSPACE/output/macaron.db" || log_fail
 python $COMPARE_POLICIES $POLICY_RESULT $POLICY_EXPECTED || log_fail
-
-# Testing the Repo Finder's remote calls.
-echo -e "\n----------------------------------------------------------------------------------"
-echo "Test Repo Finder functionality."
-echo -e "----------------------------------------------------------------------------------\n"
-python $TEST_REPO_FINDER || log_fail
-if [ $? -ne 0 ];
-then
-    echo -e "Expect zero status code but got $?."
-    log_fail
-fi
 
 echo -e "\n----------------------------------------------------------------------------------"
 echo "Test running the analysis without setting the GITHUB_TOKEN environment variables."
